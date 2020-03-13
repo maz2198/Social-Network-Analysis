@@ -1,0 +1,408 @@
+---
+title: "Forced Migration Network Analysis"
+author: "Group C"
+date: "3/12/2020"
+output: html_document
+---
+<style type="text/css">
+
+h1.title {
+  font-size: 38px;
+  text-align: center;
+}
+h4.author { 
+    font-size: 22px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+h4.date { 
+  font-size: 22px;
+  font-family: "Times New Roman", Times, serif;
+  text-align: center;
+}
+</style>
+
+<style type="text/css">
+  body {
+    background-color: #FFFFFF;
+  }
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r include=FALSE}
+
+library(igraph)
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(data.table)
+library(dplyr) 
+library(png)
+library(jpeg)
+library(grid)
+library(knitr)
+library(kableExtra)
+```
+
+```{r include=FALSE}
+
+folder_path <- "/Users/nisrineferahi/Desktop/SNA Group_Assignment/";
+
+migrants_edges = read.csv(file.path(folder_path,'refugee_edges.csv'));
+migrants_nodes = read.csv(file.path(folder_path,'refugee_nodes.csv'));
+
+```
+
+```{r include=FALSE}
+image1 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic1.jpeg")
+image2 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic2.jpeg")
+image3 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic3.jpeg")
+image4 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic4.jpeg")
+image5 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic5.jpeg")
+image6 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic6.jpeg")
+image7 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic7.jpeg")
+image8 <- readJPEG("/Users/nisrineferahi/Desktop/SNA\ Group_Assignment/pic8.jpeg")
+```
+
+
+```{r include=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+### Focusing the analysis on the year 2011
+migrants_edges = subset(migrants_edges, year==2011)
+migrants_edges = subset(migrants_edges,select = -c(year))
+```
+
+\
+  The journey of a refugee is often untold, and if told, it is never heard. Often in western mainstream media, the refugee journey is either termed as a “crisis” and expand to questions on “how this will effect our economy.” However, using various social network analysis techniques, we will debunk the stereotypical notion of a Eurocentric refugee network, and bring light to the stories of the untold.
+
+### Blind visualization of the forced migrants network in 2011
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image1)
+```
+\
+This first map is a “blind” data visualization of the migrants social network. As you can see in the first map, the flows are unweighted so it gives a misleading representation of the flow of the migrants around the globe. This is the case for most of the maps online created by famous journalists trying to show the flow of refugees around the globe; however not depicting the reality of the refugees social network. This is why we decided to first start by creating another map you can see below with weighted edges.
+
+### The visualization for the migration network using weighted edges
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image2)
+```
+\
+This map still does not give very valuable insights to the reality of the migrants social network. The reason behind this is that we are trying to plot a complex society in a simple graoh, which does not give the social network justice. This is why we are digging deeper into the analysis by dividing our refugees into three types: 
+Refugees,Asylum seekers,Internally Displaced People
+
+#### Total number of migrants in the network for the year 2011
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+### Total number of migrants in the network for the year 2011
+sum <- sum(migrants_edges[, 'weight'])
+```
+`r sum`
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+### Focusing the analysis on the refugees type of forced migrants
+migrants_edges_Refugees = subset(migrants_edges,type == "Refugees")
+migrants_edges_Asylum = subset(migrants_edges,type == "Asylum-seekers")
+migrants_edges_IDP = subset(migrants_edges,type == "Internally displaced persons")
+```
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE,results = 'asis'}
+kable(migrants_edges_Refugees[1:5, ],caption = "Refugees edges table")%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(migrants_edges_Asylum[1:5, ],caption = "Asylum-seekers edges table")%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(migrants_edges_IDP[1:5, ],caption = "Internally Displaced People edges table")%>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+#### Total number of refugees
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+sum1 <- sum(migrants_edges_Refugees[, 'weight'])
+```
+`r sum1`
+
+#### Total number of rasylum seekers
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+sum2 <- sum(migrants_edges_Asylum[, 'weight'])
+```
+`r sum2`
+
+#### Total number of internally displaced 
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+sum3 <- sum(migrants_edges_IDP[, 'weight'])
+```
+`r sum3`
+
+```{r include=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+###  Graph for the general forced migrants
+migrants = graph_from_data_frame(d=migrants_edges, vertices=migrants_nodes, directed = TRUE) 
+summary(migrants)
+###  Graph for the only refugees
+migrants_Refugees = graph_from_data_frame(d=migrants_edges_Refugees, vertices=migrants_nodes, directed = TRUE) 
+summary(migrants_Refugees)
+###  Graph for only asylum seekers
+migrants_Asylum = graph_from_data_frame(d=migrants_edges_Asylum, vertices=migrants_nodes, directed = TRUE) 
+summary(migrants_Asylum)
+###  Graph for only internally displaced people
+migrants_IDP = graph_from_data_frame(d=migrants_edges_IDP, vertices=migrants_nodes, directed = TRUE)
+summary(migrants_IDP)
+```
+#### First visualisation of the migrants social network 
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image3)
+```
+\
+We can see that the graph is disconnected with a giant component and many other nodes not connected to it that we need to further analyze later.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+#Network Diameter,Average Path Length, and transitivity for the whole netwrok of forced migrants
+diameter_migrants <- diameter(migrants,directed = T)
+mean_distance_migrants <- mean_distance(migrants,directed = T)
+trasitivityG_migrants <-transitivity(migrants,type=c("global"),weights=NULL)
+trasitivityL_migrants <- transitivity(migrants,type=c("local"),weights=NULL)
+#Network Diameter,Average Path Length, and transitivity for only Refugees
+diameter_refugees <- diameter(migrants_Refugees,directed = T)
+mean_distance_refugees <- mean_distance(migrants_Refugees,directed = T)
+trasitivityG_refugees <- transitivity(migrants_Refugees,type=c("global"),weights=NULL)
+trasitivityL_refugees <- transitivity(migrants,type=c("local"),weights=NULL)
+
+#Network Diameter,Average Path Length, and transitivity for only Asylum seekers
+diameter_asylum <- diameter(migrants_Asylum,directed = T)
+mean_distance_asylum <- mean_distance(migrants_Asylum,directed = T)
+trasitivityG_asylum <- transitivity(migrants_Asylum,type=c("global"),weights=NULL)
+trasitivityL_asylum <- transitivity(migrants,type=c("local"),weights=NULL)
+```
+
+```{r include=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+### Refugees in and out degree distribution 
+degi<-degree(migrants_Refugees, mode="in")
+hist(degi, main="Histogram of node degree")
+mean(degi)
+sd(degi)
+dego<-degree(migrants_Refugees, mode="out")
+hist(dego, main="Histogram of node degree")
+mean(dego)
+sd(dego)
+
+### Asylum-seekers in and out degree distribution 
+degi<-degree(migrants_Asylum, mode="in")
+hist(degi, main="Histogram of node degree")
+mean(degi)
+sd(degi)
+dego<-degree(migrants_Asylum, mode="out")
+hist(dego, main="Histogram of node degree")
+mean(dego)
+sd(dego)
+
+### Internally Misplaced in and out degree distribution 
+
+degi<-degree(migrants_IDP, mode="in")
+hist(degi, main="Histogram of node degree")
+mean(degi)
+sd(degi)
+dego<-degree(migrants_IDP, mode="out")
+hist(dego, main="Histogram of node degree")
+mean(dego)
+sd(dego)
+```
+## Internally Displaced People
+### Node importance: Centrality measures for Internally Displaced People
+When we are looking at the graph in general, We found many countries with self loops as you can see in the graph below. As calculating the total weighted degree of the countries, Colombia had the highest number. So we wanted to dig deeper in the analysis and first look at only the internally displaced people. Indeed columbia had the highest total number of people internally displaced (7.7M people). The reason for massive internal displacement is due to so many guerillas attacking main cities in and around Colombia (FARC is the most famous one).
+This Network by itself is worth analyzing as a social network because as a network on its own it has 32 nodes as municipalities and 4958 edges.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image4)
+```
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+IDP.degin <- strength(migrants_IDP , vids = V(migrants_IDP ), mode = c("in"),
+                         loops = TRUE, weights = NULL)
+IDP.degout <- strength(migrants_IDP, vids = V(migrants_IDP ), mode = c("out"),
+                          loops = TRUE, weights = NULL)
+
+centrality.migrants_IDP <- cbind(IDP.degin, IDP.degout)
+centrality.migrants_IDP <- as.data.frame(centrality.migrants_IDP)
+IDP_measures <- bind_cols(centrality.migrants_IDP,migrants_nodes)
+IDP_measures <- subset(IDP_measures,select = -c(id,latitude,longitude,region,continent,population))
+IDP_measures <- setDT(IDP_measures, keep.rownames = TRUE)[]
+IDP_measures <- as.data.table(IDP_measures)
+IDP_measures[,rn:=NULL]
+top3_IDPOut<-IDP_measures[order(IDP_measures$IDP.degout, decreasing = T),][1:3]
+top3_IDPIn<-IDP_measures[order(IDP_measures$IDP.degin, decreasing = T),][1:3]
+```
+
+## Refugees Getaway
+### Node importance: Centrality measures for Refugees
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+#Node importance: Centrality measures for Refugees
+refugees.degin <- strength(migrants_Refugees, vids = V(migrants_Refugees), mode = c("in"),
+         loops = TRUE, weights = NULL)
+refugees.degout <- strength(migrants_Refugees, vids = V(migrants_Refugees), mode = c("out"),
+                   loops = TRUE, weights = NULL)
+refugees.bet <-betweenness(migrants_Refugees)
+refugees.close <-closeness(migrants_Refugees)
+centrality.migrants_Refugees <- cbind(refugees.degin, refugees.degout,refugees.bet, refugees.close)
+centrality.migrants_Refugees <- as.data.frame(centrality.migrants_Refugees)
+refugees_measures <- bind_cols(centrality.migrants_Refugees,migrants_nodes)
+refugees_measures <- subset(refugees_measures,select = -c(id,latitude,longitude,region,continent,population))
+refugees_measures <- setDT(refugees_measures, keep.rownames = TRUE)[]
+refugees_measures <- as.data.table(refugees_measures)
+refugees_measures[,rn:=NULL]
+
+top3_refugeesOut<-refugees_measures[order(refugees_measures$refugees.degout, decreasing = T),][1:3]
+top3_refugeesIn<-refugees_measures[order(refugees_measures$refugees.degin, decreasing = T),][1:3]
+top3_refugeesClose<-refugees_measures[order(refugees_measures$refugees.close, decreasing = T),][1:3]
+top3_refugeesBet<-refugees_measures[order(refugees_measures$refugees.bet, decreasing = T),][1:3]
+```
+
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE,results = 'asis'}
+kable(top3_refugeesOut,caption = "Top three countries with the most refugees going out") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_refugeesIn,caption = "Top three countries with the most refugees going in") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_refugeesClose,caption = "Top three countries with the highest closeness") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_refugeesBet,caption = "Top three countries with the highest betweeness") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image6)
+```
+\
+  Analyzing the refugees data, we compared again the ranking of countries sending and receiving more refugees. But even more interesting was understanding how to interpret other centrality measures like betweenness: in this context, a country with high betweenness represent a “transitory” country. 
+\
+  Syria was acting as a transit country bridging 77 countries with a total of 775 refugees in transit.
+\
+  As we identified is the case for Syria due to their strategic geographical location, they acted as refugee gateway to connect countries from Middle East to Europe. Their borders with the Mediterranean Sea and more than 5 countries can also explain this behavior.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+
+CountriesTransition_Syria<- migrants_edges_Refugees %>%
+  filter((to == 	132 | from == 132) ) %>%
+  select(from,to)
+
+CountriesTransition_Syria <- migrants_nodes %>%
+  filter(id %in% CountriesTransition_Syria$from | id %in% CountriesTransition_Syria$to)
+
+CountriesTransition_Syria <- subset(CountriesTransition_Syria,select = -c(id,latitude,longitude,region,population))
+```
+\
+Here we have a table all the countries Syria is bridging as a transit country , we are showing five not to have a long table.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE,results = 'asis'}
+kable(CountriesTransition_Syria[1:5,] ,caption = "Countries with refugees coming from or leaving to Syria") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+### ASYLUM SAFE HAVEN
+#### Node importance: Centrality measures for Asylum seekers
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+asylum.degin <- strength(migrants_Asylum, vids = V(migrants_Asylum), mode = c("in"),
+                                    loops = TRUE, weights = NULL)
+asylum.degout <- strength(migrants_Asylum, vids = V(migrants_Asylum), mode = c("out"),
+                            loops = TRUE, weights = NULL)
+asylum.bet <-betweenness(migrants_Asylum)
+asylum.close <-closeness(migrants_Asylum)
+centrality.migrants_Asylum <- cbind(asylum.degin, asylum.degout,asylum.bet, asylum.close)
+centrality.migrants_Asylum <- as.data.frame(centrality.migrants_Asylum)
+asylum_measures <- bind_cols(centrality.migrants_Asylum,migrants_nodes)
+asylum_measures <- subset(asylum_measures,select = -c(id,latitude,longitude,region,continent,population))
+asylum_measures <- setDT(asylum_measures, keep.rownames = TRUE)[]
+asylum_measures <- as.data.table(asylum_measures)
+asylum_measures[,rn:=NULL]
+top3_asylumOut<-asylum_measures[order(asylum_measures$asylum.degout, decreasing = T),][1:3]
+top3_asylumIn<-asylum_measures[order(asylum_measures$asylum.degin, decreasing = T),][1:3]
+top3_asylumClose<-asylum_measures[order(asylum_measures$asylum.close, decreasing = T),][1:3]
+top3_asylumBet<-asylum_measures[order(asylum_measures$asylum.bet, decreasing = T),][1:3]
+```
+
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE,results = 'asis'}
+kable(top3_asylumOut,caption = "Top three countries with the most asylum-seekers going out") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_asylumIn,caption = "Top three countries with the most asylum-seekers going in") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_asylumClose,caption = "Top three countries with the highest closeness") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+
+kable(top3_asylumBet,caption = "Top three countries with the highest betweeness") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+\
+We see that south africa has the highest in degree so we want to check the countries that went to south africa 
+South Africa has ID = 125
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+
+CountriesTo_SouthAfrica <- migrants_edges_Asylum %>%
+  filter(to == 125) %>%
+  select(from)
+
+CountriesTo_SouthAfrica <- migrants_nodes %>%
+  filter(id %in% CountriesTo_SouthAfrica$from) 
+
+CountriesTo_SouthAfrica <- subset(CountriesTo_SouthAfrica,select = -c(id,latitude,longitude,region,population))
+
+```
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image5)
+```
+
+
+\
+  The highest weighted-in degree for asylum seekers is with South Africa with 220 000. Many asylum-seekers originated from Somalia, the Democratic Republic of Congo (DRC), Rwanda, Burundi, Ethiopia and Zimbabwe fleeing repressive regimes and internal conflicts.
+\
+  Typically, one would expect a developed country to have the highest degree however, having conducted further research (Marang), South Africa is a party to the 1951 Refugee Convention relating to the Status of Refugees, its 1967 Protocol and the 1969 OAU Convention regarding Specific Aspects of Refugee Problems in Africa. Moreover, South Africa is also the only country in Southern Africa that has not entered reservations to the 1951 Refugee Convention and has fully embraced international standards of refugee protection in its national legislation, the Refugee Act of 1998. 
+\
+  The primary reason for the open refugees and asylum policies are that many African countries became safe-havens for freedom-fighters during Apartheid. In South Africa there is culture which says “Umntu ngumntu ngabanye abantu.”, which translates to “I am what I am, because of who we are.” This philosophy is ingrained in South African culture, despite South Africa not having the requisite infrastructure and human freedom index.
+
+Here we have a table all the countries with asylum seekers going to South Africa, we are showing five not to have a long table.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE,results = 'asis'}
+kable(CountriesTo_SouthAfrica [1:5,] ,caption = "Countries leaving to seek asylum in South Africa") %>%
+  kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+### Community Dynamics.
+
+The goal of our community detection is to identify characteristics of the communities that have been broken but are subsequently rebuilt. The strength of the detected communities can be detected by its modularity however increasing the modularity is becomes. We utilized the attributes (population, Human Freedom Index Ranking, Life Expectancy for men and Women) as previously defined on the nodes, to execute an effective community detection analysis with the Leiden and Louvain algorithm first with the Constant pots Model, then with Modularity. They both resulted in 26 communities and validated each other’s approach. However, upon further analysis, we identified that some communities were nascent, but negligible and so misleading. We subsequently employed DBScan.
+\
+DBSCAN clustering has been implemented for the task of detecting the outliers in the process of detecting the communities in this refugee social network, and these outliers “noisy nodes”, are removed from the main formed network graph. 
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image7)
+```
+\
+This resulted in four different clusters with similar profiles connected with each other. However, this also produced a detached cluster with high transitivity and reciprocity. Upon further review, this represented the countries of the former Yugoslavia: Serbia & Kosovo, Bosnia & Herzegovina and Macedonia. Exploring further literature about this region, we found that because of the Yugoslavia wars in the mid 90’s and subsequent internal conflicts, many families who were displaced after the dissolution of Yugoslavia, are reformed in countries of the similar hue. From death, until rebirth.
+
+```{r echo=FALSE,messages=FALSE,warning=FALSE,fig.align="center",tidy=TRUE}
+grid.raster(image8)
+```
+
+### Conclusion 
+
+With this social netwrok analysis of the forced migrants, we have been able to dispell the eurocentric notion of the refugee crisis. Moreover, it is about rethinking our humanity.
+
+
+
+
+
+
+
+
+
+
+
+
+
